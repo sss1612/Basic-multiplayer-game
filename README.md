@@ -1,5 +1,5 @@
 # Basic-multiplayer-game
-Python3, pygame, multiplayer, sockets, threading, localhost
+Modules - Python3, pygame, multiplayer, sockets, threading, localhost
 
 Run server.py
 Run client.py, use the arrow keys to move the circle on screen.
