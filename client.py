@@ -32,25 +32,25 @@ class Player():
 		pygame.draw.circle(self.screen, self.colour, (self.x, self.y), self.radius, self.thickness)
 
 
-	def draw_players(self, string):
+	def draw_players(self, data):
 		global screen
 
-		string = string.split("-")
-		for player in string:
+		data = data.split("-")
+		print(data)
+		for player in data:
 			#print(player, "<<")
 			player = player.split(",")
 			if player == [""]:continue
 			#print(player)
-			key, x, y = player[0], int(player[1]), int(player[2])
+			key, colour, x, y = player[0], player[1], int(player[2]), int(player[3])
 
 			#I don't want to draw myself twice, self constants are unified
 			if key != self.key:
 				pygame.draw.circle(self.screen, self.COLOUR_ASSIGN[key], (x, y), self.radius, self.thickness)
-		#print(string) <--- player data, uncomment to reveal style
+		#print(data) <--- player data, uncomment to reveal style
 
-	def handle_keys(self):
+	def handle_keys(self, client):
 		#Makes sure circle stays on screen, 10px is the border compensation
-		global client
 		key = pygame.key.get_pressed()
 		if key[pygame.K_DOWN] and self.y < self.MAX_HEGIHT - self.radius -10:
 			self.y += self.speed
@@ -131,7 +131,7 @@ def main():
 		data = client.recv(50).decode("utf-8")		#receive other clients player information
 		#print(data)
 		player.draw_players(data)
-		player.handle_keys()
+		player.handle_keys(client)
 		player.draw_circle()
 		pygame.display.flip()
 		clock.tick(63)

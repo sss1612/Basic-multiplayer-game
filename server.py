@@ -1,92 +1,137 @@
 import socket, threading, sys, time, os
 
-lock = threading.Lock()
 #index will be reserved for players data
-players = ["" for x in range(5)]
-#NAFU
-taken = {
-	0:False,
-	1:False,
-	2:False,
-	3:False,
-	4:False
 
-}
-#for personal debugging
-def pprint(lst):
-	for x in lst:
-		print(x)
-	print("---\n")
+class Server():
+	Lock = threading.Lock()
+	Player_data = {}
 
-def debug_msg(string, addr, key):
-	print("Looping Thread: {}".format(key))
-	print("{}{}{}\ntype: {} len: {}".format(addr, ' >> ', msg, type(msg), len(msg)))
+	Keys = {
+		"0":True,
+		"1":True,
+		"2":True,
+		"3":True,
+		"4":True,
+	}
 
-def clear_namespace(key):
-	global lock, players
-	lock.acquire()
-	players[key] = ""
-	lock.release()
+	def __init__(self, host, port):
+
+		self.host = host
+		self.port = port
+		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+		#Some machine don't agree without this
+		self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.server.bind((self.host, self.port))
+		self.server.listen(5)
+#		self.run()
 
 
-def on_new_client(clientsocket, addr, key):
-	print("Did the function even start?")
-	global players
+	def run(self):
+
+		print('Server started!')
+		print("Listening on - {}:{}".format(self.host, self.port))
+
+		while True:
+			if self.has_free_key():
+				
+				print("Awaiting new connection")
+
+				conn, addr = self.server.accept()
+				key = self.allocate_key()
+				conn.send(key.encode("utf-8"))
+				
+				print('Got connection from', addr)
+				self.start_new_thread(conn, addr, key)
+
+				time.sleep(.1)
+		s.close()
+
+
+	def has_free_key(self):
+		for value in self.Keys.values():
+			if value:
+				return value
+		return False
+
+	def allocate_key(self):
+		for key, value in self.Keys.items():
+			if value:
+				#key is taken, set to false
+				self.Lock.acquire()
+				self.Keys[key] = False
+				self.Lock.release()
+				print(self.Keys)
+				return key
+
+	def restore_key(self, key):
+		self.Lock.acquire()
+
+		self.Keys[key] = True
+		self.Player_data.pop(key)
+
+		self.Lock.release()
+
+
+	def start_new_thread(self, conn, addr, key):
+		thread = threading.Thread(target=self.on_new_client, args=(conn, addr, key) )
+		thread.daemon = True	#kill thread when the main thread exits
+		thread.start()
 	
-	while True:
-		
-		#exit thread if the connection is lost
-		try:
-			msg = clientsocket.recv(20).decode("utf-8")
-		except:
-			msg = "quit"
-		#Exit if the player sends 'quit' 
-		if msg == "quit":
-			clear_namespace(key)
-			clientsocket.shutdown(socket.SHUT_RDWR)
-			clientsocket.close()
-			print("Client: {} has disconnected".format(key))
-			break
-		lock.acquire()
-		players[key] = msg
-		lock.release()
 
-		#give a string representation of players
-		clientsocket.send("-".join(players).encode("utf-8"))
-		#debug_msg(msg, addr, key) 
-	print("Graceful exit")
+	def on_new_client(self, clientsocket, addr, key):
+		print("Did the function even start?")
+		
+		while True:
+			
+			#exit thread if the connection is lost
+			try:
+				msg = clientsocket.recv(20).decode("utf-8")
+			except:
+				print("Connection ended abruptly")
+				msg = "quit"
+			#Exit if the player sends 'quit' 
+			if msg == "quit":
+				self.restore_key(key)
+				clientsocket.shutdown(socket.SHUT_RDWR)
+				clientsocket.close()
+				print("Client: {} has disconnected".format(key))
+				break
+
+			self.Lock.acquire()
+			self.Player_data[key] = msg
+			self.Lock.release()
+
+			#give a string representation of players
+			"""['0,0,300,240']"""
+			lst = ["{},{}".format(k, v) for k, v in self.Player_data.items()]
+			print(lst)
+			clientsocket.send("-".join(lst).encode("utf-8"))
+			#debug_msg(msg, addr, key) 
+		print("Graceful exit")
+
+
+	def pprint(lst):
+		for x in lst:
+			print(x)
+		print("---\n")
+
+	
+	def debug_msg(string, addr, key):
+		print("Looping Thread: {}".format(key))
+		print("{}{}{}\ntype: {} len: {}".format(addr, ' >> ', msg, type(msg), len(msg)))
+
+	
 
 
 def main():
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	host = "127.0.0.1"
-	port = 12000
-	#Some machine don't agree without this
-	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	host, port = "127.0.0.1", 12000
+	if len(sys.argv) > 1:
+		arg1, arg2 = sys.argv[1].split(":")
+		host, port = arg1, int(arg2)
 
-	s.bind((host, port))
-	s.listen(5)
-	print('Server started!')
-	print("Listening on- {}:{}".format(host, port))
-
-	#Identifies each player in the game
-	key = 0
-	while True:
-
-		if key < 5:
-			print("Awaiting new connection")
-			c, addr = s.accept()
-			c.send( str(key).encode("utf-8"))
-			print('Got connection from', addr)
-			try:
-				t = threading.Thread(target=on_new_client, args=(c, addr, key) )
-			except:
-				print("A connection was closed")
-			key += 1
-			t.daemon = True	#kill thread when the main thread exits
-			t.start()
-			time.sleep(.1)
-	s.close()
+	server = Server(host, port)	#returns socket object to be issued with existing connections
+	server.run()
 
 if __name__ == "__main__":
 	main()
