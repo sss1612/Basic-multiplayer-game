@@ -1,10 +1,7 @@
-import sys, socket, threading, time
-
-live = True
-max_width, max_height = 600, 480
-
-
-class Circle():
+import socket, time, sys, pygame
+class Player():
+	MAX_WIDTH = 600
+	MAX_HEGIHT = 480
 
 	COLOUR_ASSIGN = {
 		"0":(255, 0, 0),
@@ -48,14 +45,14 @@ class Circle():
 
 			#I don't want to draw myself twice, self constants are unified
 			if key != self.key:
-				pygame.draw.circle(screen, self.COLOUR_ASSIGN[key], (x, y), self.radius, self.thickness)
-		#print(string)
+				pygame.draw.circle(self.screen, self.COLOUR_ASSIGN[key], (x, y), self.radius, self.thickness)
+		#print(string) <--- player data, uncomment to reveal style
 
 	def handle_keys(self):
 		#Makes sure circle stays on screen, 10px is the border compensation
 		global client
 		key = pygame.key.get_pressed()
-		if key[pygame.K_DOWN] and self.y < max_height - self.radius -10:
+		if key[pygame.K_DOWN] and self.y < self.MAX_HEGIHT - self.radius -10:
 			self.y += self.speed
 			if key[pygame.K_SPACE]:
 				self.y += self.speed
@@ -69,7 +66,7 @@ class Circle():
 			if key[pygame.K_SPACE]:
 				self.x -= self.speed
 	
-		if key[pygame.K_RIGHT] and self.x < max_width - self.radius - 10:
+		if key[pygame.K_RIGHT] and self.x < self.MAX_WIDTH - self.radius - 10:
 			self.x += self.speed
 			if key[pygame.K_SPACE]:
 				self.x += self.speed
@@ -81,52 +78,64 @@ class Circle():
 			time.sleep(.5)
 			sys.exit(0)
 
+def find_connection(address):
 
-retry = True
-while retry:
-	try:
-		client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		client.connect(("127.0.0.1", 12000))
-		key = client.recv(10).decode("utf-8")
-	except:
-		time.sleep(4)
-		continue
-	retry = not retry
+	while True:
+		try:
+			client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)	#IPV4, tcp
+			client.connect(address)
+			key = client.recv(10).decode("utf-8")
+		except:
+			time.sleep(4)
+			print("Searching for host", address)
+			continue
+		return client, key
+		#socket obj, int
+		
 
-import pygame
-pygame.display.set_caption("Reddy Freddy")
-pygame.init()
-clock = pygame.time.Clock()
-screen = pygame.display.set_mode((max_width, max_height))
 
-Player = Circle(screen, max_width//2, max_height//2, key)
-while live:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			client.send("quit".encode("utf-8"))
-			live = False
-			time.sleep(.5)
-			pygame.quit()
-			sys.exit(0)
+def main():
+
+	host, port = "127.0.0.1", 12000
+	client, key = find_connection((host, port))
+
+	pygame.init()
 	
+	live = True
+	screen = pygame.display.set_mode((Player.MAX_WIDTH, Player.MAX_HEGIHT))
+	clock = pygame.time.Clock()
 
-	screen.fill((0, 0, 0))	#black
+	player = Player(screen, Player.MAX_WIDTH//2, Player.MAX_HEGIHT//2, key)
+	while live:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				client.send("quit".encode("utf-8"))
+				live = False
+				time.sleep(.5)
+				pygame.quit()
+				sys.exit(0)
+		
 
-	""" Commas seperate data in buffer
-	key: 		1 byte
-	x coords: 	3 bytes
-	y coords:	3 bytes
-	color:		0 bytes	<-- key determines this
-	commas:		2 bytes
-	-------------------
-	max total	9 bytes	
-	"""
-	client.send(Player.data().encode("utf-8"))	#send player statistics
-	data = client.recv(50).decode("utf-8")		#receive other clients player information
-	#print(data)
-	Player.draw_players(data)
-	Player.handle_keys()
-	Player.draw_circle()
-	pygame.display.flip()
-	clock.tick(63)
-client.close()
+		screen.fill((0, 0, 0))	#black
+
+		""" Commas seperate data in buffer
+		key: 		1 byte
+		x coords: 	3 bytes
+		y coords:	3 bytes
+		color:		0 bytes	<-- key determines this
+		commas:		2 bytes
+		-------------------
+		max total	9 bytes	
+		"""
+		client.send(player.data().encode("utf-8"))	#send player statistics
+		data = client.recv(50).decode("utf-8")		#receive other clients player information
+		#print(data)
+		player.draw_players(data)
+		player.handle_keys()
+		player.draw_circle()
+		pygame.display.flip()
+		clock.tick(63)
+	client.close()
+
+if __name__ == "__main__":
+	main()
