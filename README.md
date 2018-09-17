@@ -16,5 +16,7 @@ yet again crude python server.
 This does nothing other than allowing the movement of the circle on screen via arrow keys and viewing other connected clients.
 
 Current design flaws:
+
 -Client crashes if server crashes
+
 -Server can only handle up to 5 initial connectors and ceases to work
