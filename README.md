@@ -19,4 +19,4 @@ Current design flaws:
 
 -Client crashes if server crashes
 
--Server can only handle up to 5 initial connectors and ceases to work
+-Server design can only handle up to 5 clients
