@@ -12,7 +12,7 @@ taken = {
 	4:False
 
 }
-
+#for personal debugging
 def pprint(lst):
 	for x in lst:
 		print(x)
@@ -43,8 +43,10 @@ def on_new_client(clientsocket, addr, key):
 		#Exit if the player sends 'quit' 
 		if msg == "quit":
 			clear_namespace(key)
+			clientsocket.shutdown(socket.SHUT_RDWR)
 			clientsocket.close()
-			return
+			print("Client: {} has disconnected".format(key))
+			break
 		lock.acquire()
 		players[key] = msg
 		lock.release()
@@ -52,34 +54,39 @@ def on_new_client(clientsocket, addr, key):
 		#give a string representation of players
 		clientsocket.send("-".join(players).encode("utf-8"))
 		#debug_msg(msg, addr, key) 
+	print("Graceful exit")
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = "127.0.0.1"
-port = 12000
-#Some machine don't agree without this
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-s.bind((host, port))
-s.listen(5)
-print('Server started!')
+def main():
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	host = "127.0.0.1"
+	port = 12000
+	#Some machine don't agree without this
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-#Identifies each player in the game
-key = 0
-while True:
+	s.bind((host, port))
+	s.listen(5)
+	print('Server started!')
+	print("Listening on- {}:{}".format(host, port))
 
-	if key < 4:
-		print("Awaiting new connection")
-		c, addr = s.accept()
-		time.sleep(.1)
-		c.send( str(key).encode("utf-8"))
-		print('Got connection from', addr)
-		try:
-			t = threading.Thread(target=on_new_client, args=(c, addr, key) )
-		except:
-			print("A connection was closed")
-		key += 1
-		t.daemon = True	#kill thread when the main thread exits
-		t.start()
-	#os.system("cls")
-	#pprint(players)
-s.close()
+	#Identifies each player in the game
+	key = 0
+	while True:
+
+		if key < 5:
+			print("Awaiting new connection")
+			c, addr = s.accept()
+			c.send( str(key).encode("utf-8"))
+			print('Got connection from', addr)
+			try:
+				t = threading.Thread(target=on_new_client, args=(c, addr, key) )
+			except:
+				print("A connection was closed")
+			key += 1
+			t.daemon = True	#kill thread when the main thread exits
+			t.start()
+			time.sleep(.1)
+	s.close()
+
+if __name__ == "__main__":
+	main()
