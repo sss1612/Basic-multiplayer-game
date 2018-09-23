@@ -42,11 +42,11 @@ class Player():
 			player = player.split(",")
 			if player == [""]:continue
 			#print(player)
-			key, colour, x, y = player[0], player[1], int(player[2]), int(player[3])
+			key, x, y =  player #unpacking player 
 
 			#I don't want to draw myself twice, self constants are unified
 			if key != self.key:
-				pygame.draw.circle(self.screen, self.COLOUR_ASSIGN[key], (x, y), self.radius, self.thickness)
+				pygame.draw.circle(self.screen, self.COLOUR_ASSIGN[key], (int(x), int(y)), self.radius, self.thickness)
 		#print(data) <--- player data, uncomment to reveal style
 
 	def handle_keys(self, client):
@@ -96,6 +96,7 @@ def find_connection(address):
 
 def main():
 
+	#host, port = "192.168.0.7", 12000
 	host, port = "127.0.0.1", 12000
 	client, key = find_connection((host, port))
 
@@ -128,7 +129,7 @@ def main():
 		max total	9 bytes	
 		"""
 		client.send(player.data().encode("utf-8"))	#send player statistics
-		data = client.recv(50).decode("utf-8")		#receive other clients player information
+		data = client.recv(128).decode("utf-8")		#receive other clients player information
 		#print(data)
 		player.draw_players(data)
 		player.handle_keys(client)
