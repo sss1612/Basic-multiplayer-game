@@ -3,6 +3,7 @@ import socket, threading, sys, time, os
 #index will be reserved for players data
 
 class Server():
+	MAX_LISTENERS = 5
 	Lock = threading.Lock()
 	Player_data = {}
 
@@ -15,7 +16,16 @@ class Server():
 	}
 
 	def __init__(self, host, port):
+		"""
+		Args:
+			host (str): The first parameter
+			port (int): The second parameter
 
+    	Attributes:
+        	msg (str): Human readable string describing the exception.
+        	code (int): Exception error code.
+        	server (socket inst)
+		"""
 		self.host = host
 		self.port = port
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,12 +33,12 @@ class Server():
 		#Some machine don't agree without this
 		self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.server.bind((self.host, self.port))
-		self.server.listen(5)
+		self.server.listen(self.MAX_LISTENERS)
 #		self.run()
 
 
 	def run(self):
-
+		"""Run the server and listen to connections"""
 		print('Server started!')
 		print("Listening on - {}:{}".format(self.host, self.port))
 
@@ -49,6 +59,7 @@ class Server():
 
 
 	def has_free_key(self):
+		"""Checks for availible connecting places"""
 		for value in self.Keys.values():
 			if value:
 				return value
@@ -64,7 +75,9 @@ class Server():
 				print(self.Keys)
 				return key
 
+
 	def restore_key(self, key):
+		"""Restores client key upon disconnecting"""
 		self.Lock.acquire()
 
 		self.Keys[key] = True
@@ -74,12 +87,15 @@ class Server():
 
 
 	def start_new_thread(self, conn, addr, key):
+		"""Create a new thread to send and receive data from client"""
+
 		thread = threading.Thread(target=self.on_new_client, args=(conn, addr, key) )
 		thread.daemon = True	#kill thread when the main thread exits
 		thread.start()
 	
 
 	def on_new_client(self, clientsocket, addr, key):
+		"""Handles client data transfer through sockets"""
 		print("Did the function even start?")
 		
 		while True:
@@ -103,7 +119,7 @@ class Server():
 			self.Lock.release()
 
 			#give a string representation of players
-			"""['0,300,240']"""
+			#['0,300,240']
 
 			lst = [v for v in self.Player_data.values()]
 			print(lst)
@@ -112,28 +128,16 @@ class Server():
 		print("Graceful exit")
 
 
-	def pprint(lst):
-		for x in lst:
-			print(x)
-		print("---\n")
-
-	
-	def debug_msg(string, addr, key):
-		print("Looping Thread: {}".format(key))
-		print("{}{}{}\ntype: {} len: {}".format(addr, ' >> ', msg, type(msg), len(msg)))
-
-	
-
-
+#SELF MADE SETUP EXAMPLE
 def main():
-	#host, port = "192.168.0.7", 12000
-	host, port = "127.0.0.1", 12000
+	#host, port = "127.0.0.1", 12000
+	host, port = "136.206.10.186", 12000
 	if len(sys.argv) > 1:
 		arg1, arg2 = sys.argv[1].split(":")
 		host, port = arg1, int(arg2)
 
 	server = Server(host, port)	#returns socket object to be issued with existing connections
-	server.run()
+	server.run()#I could have made the server start in __init__, But I like red button privileges.
 
 if __name__ == "__main__":
 	main()
