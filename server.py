@@ -44,7 +44,7 @@ class Server():
 				print('Got connection from', addr)
 				self.start_new_thread(conn, addr, key)
 
-				time.sleep(.1)
+			time.sleep(.1)
 		s.close()
 
 
@@ -103,8 +103,9 @@ class Server():
 			self.Lock.release()
 
 			#give a string representation of players
-			"""['0,0,300,240']"""
-			lst = ["{},{}".format(k, v) for k, v in self.Player_data.items()]
+			"""['0,300,240']"""
+
+			lst = [v for v in self.Player_data.values()]
 			print(lst)
 			clientsocket.send("-".join(lst).encode("utf-8"))
 			#debug_msg(msg, addr, key) 
@@ -125,6 +126,7 @@ class Server():
 
 
 def main():
+	#host, port = "192.168.0.7", 12000
 	host, port = "127.0.0.1", 12000
 	if len(sys.argv) > 1:
 		arg1, arg2 = sys.argv[1].split(":")
