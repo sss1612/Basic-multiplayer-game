@@ -98,6 +98,7 @@ def main():
 
 	#host, port = "192.168.0.7", 12000
 	host, port = "127.0.0.1", 12000
+
 	client, key = find_connection((host, port))
 
 	pygame.init()
