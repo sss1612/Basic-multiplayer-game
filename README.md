@@ -20,5 +20,3 @@ Current design flaws:
 -Client crashes if server crashes
 
 -Server design can only handle up to 5 clients. (Others are rejected by the server)
-
-(WARNING. Some issues with connecting 5 clients to a server. Reason yet unknown)
